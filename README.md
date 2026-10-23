@@ -60,13 +60,15 @@ Publisher terms determine permitted display, attribution, copying, and retention
 - Light/dark appearance is saved on this device. Phone layouts switch between the note list and editor, with a navigation drawer.
 - The editor ribbon includes appearance and Focus mode controls. The left navigation and Your Notebook list minimize independently on desktop/tablet. Minimize Your Notebook beside its heading and restore it with **Show notebook** in the ribbon. The current editor remains mounted. Focus mode temporarily hides both panels and preserves their earlier minimized states on exit.
 - Personal reflections hide the preacher field. Switching back to a sermon or Bible study restores it without erasing a previously entered name.
+- The phone editor uses a single-row header with a version picker, Bible search and note actions. **Note details** reveals the preacher and tags; **Formatting options** reveals the text tools. Dark mode and Focus mode are available in **Note actions** on phones. The footer shows word count and edit time without a device-save indicator.
+- **Add next verse** in the passage preview extends the current chapter's selection one verse at a time, retaining its starting verse and chosen translation. It inserts as a single passage. Failed extensions preserve the previous selection; another reference can still be added separately.
 - Navigation, the notes list and the writing area scroll independently within the viewport. The mobile navigation drawer scrolls too. Short notes retain 240–480px of editable space below the last paragraph, including in Focus mode; clicking below the text focuses the end and creates a paragraph only when needed.
 
 ## First visit and guest notes
 
 New visitors see a welcome page with the logo, a short introduction, **Start taking notes** and an optional **Sign in** action. Starting opens one blank note immediately, including on mobile. Notes save locally without an account. Returning visitors and existing notebooks open directly in the app; authentication callback links also bypass the welcome page.
 
-After a guest writes at least 30 words, a dismissible suggestion offers account signup for syncing across devices. It never opens an account form automatically. Signup remembers the requested device-note import for that email address, including when confirmation and sign-in happen later. Imported notes retain their IDs, merge with account notes and use the existing sync retry flow. The guest originals stay on the device. Ordinary sign-in continues to keep guest and account notebooks separate.
+After a guest writes at least 30 words, a dismissible suggestion at the end of the note offers account signup for syncing across devices. It never opens an account form automatically. Signup remembers the requested device-note import for that email address, including when confirmation and sign-in happen later. Imported notes retain their IDs, merge with account notes and use the existing sync retry flow. The guest originals stay on the device. Ordinary sign-in continues to keep guest and account notebooks separate.
 
 ## Install as an app
 

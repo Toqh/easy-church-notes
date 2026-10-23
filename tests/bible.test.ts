@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { detectReference, validPassageId } from "../lib/notes/bible-reference.ts";
+import { detectReference, validPassageId, extendPassageReference } from "../lib/notes/bible-reference.ts";
 import { BibleError, createBibleClient } from "../lib/notes/youversion.ts";
 
 test("recognises references at the caret, abbreviations, and numbered books",()=>{
@@ -18,6 +18,12 @@ test("does not trigger on ordinary text, unfinished references, or invalid range
   assert.equal(validPassageId("FAKE.1.1"),false);
   assert.equal(validPassageId("1CO.13.4-7"),true);
   assert.equal(validPassageId("JHN.22.1"),false);
+});
+
+test("extends a single verse or existing range without moving its starting verse",()=>{
+  assert.deepEqual(extendPassageReference("JHN.3.16"),{id:"JHN.3.16-17",label:"John 3:16–17"});
+  assert.deepEqual(extendPassageReference("1CO.13.4-7"),{id:"1CO.13.4-8",label:"1 Corinthians 13:4–8"});
+  for(const id of ["JHN.3","PSA.119.176","JHN.22.1","../../secrets"])assert.equal(extendPassageReference(id),null);
 });
 test("rejects missing key without a network call",async()=>{
   let calls=0;

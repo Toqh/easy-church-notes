@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent, Extension, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
 import { TextSelection } from "@tiptap/pm/state";
-import { Bold, Italic, List, ListOrdered, Heading2, Quote, Undo2, Redo2 } from "lucide-react";
+import { Bold, Italic, List, ListOrdered, Heading2, Quote, Undo2, Redo2, Type } from "lucide-react";
 import { detectReference, type BibleReference } from "@/lib/notes/bible-reference";
 import type { Note } from "@/lib/notes/types";
 import { trackScriptureViews } from "@/lib/notes/scripture-views";
@@ -16,6 +16,7 @@ const ScriptureMetadata=Extension.create({
 
 interface Props { note:Note; onChange:(patch:Partial<Note>)=>void; onReference:(reference:BibleReference)=>void; onEditor:(editor:Editor)=>(()=>void)|void; readonly?:boolean }
 export default function NoteEditor({note,onChange,onReference,onEditor,readonly=false}:Props) {
+  const [formattingOpen,setFormattingOpen]=useState(false);
   const callbacks=useRef({onChange,onReference,onEditor}); callbacks.current={onChange,onReference,onEditor};
   const editor=useEditor({
     immediatelyRender:false,
@@ -68,5 +69,5 @@ export default function NoteEditor({note,onChange,onReference,onEditor,readonly=
     {label:"Numbered list",icon:ListOrdered,active:editor?.isActive("orderedList"),run:()=>editor?.chain().focus().toggleOrderedList().run()},
     {label:"Quote",icon:Quote,active:editor?.isActive("blockquote"),run:()=>editor?.chain().focus().toggleBlockquote().run()},
   ];
-  return <><div className="format-toolbar" role="toolbar" aria-label="Text formatting"><div className="format-tools">{tools.map(({label,icon:Icon,active,run})=><button type="button" key={label} title={label} aria-label={label} aria-pressed={!!active} className={`icon-button ${active?"is-active":""}`} onMouseDown={e=>e.preventDefault()} onClick={run} disabled={readonly}><Icon size={16}/></button>)}<span className="tool-divider"/><button className="icon-button" aria-label="Undo" title="Undo" onClick={()=>editor?.chain().focus().undo().run()} disabled={readonly}><Undo2 size={15}/></button><button className="icon-button" aria-label="Redo" title="Redo" onClick={()=>editor?.chain().focus().redo().run()} disabled={readonly}><Redo2 size={15}/></button></div><span className="format-hint">Make room for what matters.</span></div>{!readonly&&<p className="reference-tip">Type a passage like <code>John 3:16</code>, then press <kbd>Enter</kbd>.</p>}<EditorContent editor={editor}/></>;
+  return <><div className={`format-toolbar ${formattingOpen?"format-open":""}`} role="toolbar" aria-label="Text formatting"><button type="button" className="icon-button format-toggle" aria-label="Formatting options" aria-expanded={formattingOpen} onMouseDown={event=>event.preventDefault()} onClick={()=>setFormattingOpen(value=>!value)} disabled={readonly}><Type size={20}/></button><div className="format-tools">{tools.map(({label,icon:Icon,active,run})=><button type="button" key={label} title={label} aria-label={label} aria-pressed={!!active} className={`icon-button format-option ${active?"is-active":""}`} onMouseDown={e=>e.preventDefault()} onClick={run} disabled={readonly}><Icon size={16}/></button>)}<span className="tool-divider"/><button className="icon-button" aria-label="Undo" title="Undo" onClick={()=>editor?.chain().focus().undo().run()} disabled={readonly}><Undo2 size={15}/></button><button className="icon-button" aria-label="Redo" title="Redo" onClick={()=>editor?.chain().focus().redo().run()} disabled={readonly}><Redo2 size={15}/></button></div></div>{!readonly&&editor?.isEmpty&&<p className="reference-tip">Type <code>John 3:16</code>, then press <kbd>Enter</kbd> to add a verse.</p>}<EditorContent editor={editor}/></>;
 }

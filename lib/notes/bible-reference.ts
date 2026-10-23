@@ -36,3 +36,13 @@ export function validPassageId(id: string): boolean {
   const book=books.find(b=>b[0]===m[1]);
   return !!book && Number(m[2])>=1 && Number(m[2])<=book[1] && (!m[3] || (Number(m[3])>=1 && Number(m[3])<=176)) && (!m[4] || (Number(m[4])>=Number(m[3]) && Number(m[4])<=176));
 }
+
+export function extendPassageReference(id: string): BibleReference | null {
+  if(!validPassageId(id))return null;
+  const match=id.match(/^([1-3]?[A-Z]{2,3})\.(\d{1,3})\.(\d{1,3})(?:-(\d{1,3}))?$/);
+  if(!match)return null;
+  const book=books.find(item=>item[0]===match[1])!;
+  const next=Number(match[4]??match[3])+1;
+  if(next>176)return null;
+  return {id:`${match[1]}.${match[2]}.${match[3]}-${next}`,label:`${book[2][0]} ${match[2]}:${match[3]}–${next}`};
+}

@@ -3,6 +3,8 @@ import { test, expect } from "@playwright/test";
 const versions=[{id:1,abbreviation:"KJV",title:"King James Version"},{id:2,abbreviation:"ASV",title:"American Standard Version"},{id:111,abbreviation:"NIV",title:"New International Version"},{id:116,abbreviation:"NLT",title:"New Living Translation"}];
 const passages:Record<string,{reference:string;content:string}>={
   "JHN.3.16":{reference:"John 3:16",content:"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."},
+  "JHN.3.16-17":{reference:"John 3:16–17",content:"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.\nFor God sent not his Son into the world to condemn the world; but that the world through him might be saved."},
+  "JHN.3.16-18":{reference:"John 3:16–18",content:"For God so loved the world.\nFor God sent not his Son into the world to condemn the world.\nHe that believeth on him is not condemned."},
   "ROM.8.28":{reference:"Romans 8:28",content:"And we know that all things work together for good to them that love God, to them who are the called according to his purpose."},
   "ROM.8.28-30":{reference:"Romans 8:28–30",content:"And we know that all things work together for good to them that love God, to them who are the called according to his purpose.\nFor whom he did foreknow, he also did predestinate to be conformed to the image of his Son, that he might be the firstborn among many brethren.\nMoreover whom he did predestinate, them he also called: and whom he called, them he also justified: and whom he justified, them he also glorified."},
 };
@@ -106,11 +108,58 @@ test("top-right phrase search selects results and creates a note when none is op
 
 test("mobile modal and editor remain usable at 320px",async({page})=>{
   await page.setViewportSize({width:320,height:844});await page.goto("/");await page.getByRole("button",{name:/Walking by faith/}).click();
-  const search=page.getByLabel("Search Bible reference or text");await search.fill("John 3:16");await search.press("Enter");
+  await page.getByRole("button",{name:"Find Bible passage"}).click();
+  const search=modal(page).getByLabel("Bible reference or text",{exact:true});await search.fill("John 3:16");await search.press("Enter");
   await expect(modal(page).locator(".verse-preview-text")).toContainText("For God so loved");
   const fits=await modal(page).evaluate(e=>{const b=e.getBoundingClientRect();return b.left>=0&&b.right<=innerWidth&&b.bottom<=innerHeight&&e.scrollWidth<=e.clientWidth;});expect(fits).toBe(true);
   await modal(page).getByRole("button",{name:/^Insert into note/}).click();
   await expect(page.getByRole("textbox",{name:"Note content"}).locator("blockquote")).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
+});
+
+test("Add next verse extends one passage repeatedly and keeps its range when changing versions",async({page})=>{
+  await page.goto("/");const content=page.getByRole("textbox",{name:"Note content"});await content.fill("John 3:16");await content.press("Enter");
+  const dialog=modal(page);await expect(dialog.locator(".verse-preview-text")).toHaveText(passages["JHN.3.16"].content);
+  await dialog.getByRole("button",{name:"Add next verse",exact:true}).click();
+  await expect(dialog.getByLabel("Reference 1",{exact:true})).toHaveValue("John 3:16–17");
+  await expect(dialog.locator(".verse-preview-text")).toHaveText(passages["JHN.3.16-17"].content);await expect(dialog.locator(".passage-draft")).toHaveCount(1);
+  await dialog.getByRole("button",{name:"Add next verse",exact:true}).click();
+  await expect(dialog.getByLabel("Reference 1",{exact:true})).toHaveValue("John 3:16–18");
+  await dialog.getByLabel("Passage Bible version").selectOption("111");
+  await expect(dialog.locator(".passage-preview-label")).toContainText("NIV");
+  await dialog.getByRole("button",{name:/^Insert into note/}).click();
+  await expect(content.locator("blockquote")).toHaveCount(1);await expect(content.locator("blockquote")).toContainText("John 3:16–18");await expect(content.locator("blockquote")).toContainText("He that believeth on him is not condemned.");
+});
+
+test("a next-verse lookup failure preserves the current verse and it can still be inserted",async({page})=>{
+  await page.route("**/api/bible?**",async route=>{
+    const params=new URL(route.request().url()).searchParams;
+    if(params.get("reference")==="JHN.3.16-17")return route.fulfill({status:404,json:{error:"The next verse could not be loaded."}});
+    return route.fallback();
+  });
+  await page.goto("/");const content=page.getByRole("textbox",{name:"Note content"});await content.fill("John 3:16");await content.press("Enter");
+  const dialog=modal(page);await dialog.getByRole("button",{name:"Add next verse",exact:true}).click();
+  await expect(dialog.getByRole("alert")).toContainText("The next verse could not be loaded.");await expect(dialog.locator(".verse-preview-text")).toHaveText(passages["JHN.3.16"].content);
+  await expect(dialog.getByLabel("Reference 1",{exact:true})).toHaveValue("John 3:16");await dialog.getByRole("button",{name:/^Insert into note/}).click();
+  await expect(content.locator("blockquote")).toContainText(passages["JHN.3.16"].content);
+});
+
+test("the mobile editor gives writing priority while details, formatting and view controls remain accessible",async({page},testInfo)=>{
+  await page.setViewportSize({width:390,height:700});await page.goto("/");await page.getByRole("button",{name:/Walking by faith/}).click();
+  const content=page.getByRole("textbox",{name:"Note content"});await content.fill("A quieter space for my thoughts.");
+  expect((await page.locator(".editor-ribbon").boundingBox())!.height).toBeLessThanOrEqual(72);
+  expect((await content.boundingBox())!.y).toBeLessThan(350);
+  await expect(page.getByLabel("Preacher",{exact:true})).toBeHidden();await expect(page.getByLabel("Bold",{exact:true})).toBeHidden();
+  await expect(page.locator(".editor-footer")).not.toContainText("Saved on this device");await expect(page.locator(".list-footer")).not.toContainText("Notes saved on this device");
+  await page.screenshot({path:testInfo.outputPath("mobile-note.png"),fullPage:true});
+  await page.getByRole("button",{name:"Note details",exact:true}).click();await page.getByLabel("Preacher",{exact:true}).fill("Pastor Ada");
+  await page.getByRole("button",{name:"Note details",exact:true}).click();
+  await content.click();await content.press("ControlOrMeta+a");await page.getByLabel("Formatting options",{exact:true}).click();await page.getByLabel("Bold",{exact:true}).click();
+  await expect(content.locator("strong")).toContainText("A quieter space for my thoughts.");
+  await page.getByLabel("Formatting options",{exact:true}).click();
+  await page.getByLabel("Note actions",{exact:true}).click();await page.locator(".more-menu").getByRole("button",{name:"Enable dark mode",exact:true}).click();await expect(page.locator("html")).toHaveAttribute("data-theme","dark");
+  await page.getByLabel("Note actions",{exact:true}).click();await page.locator(".more-menu").getByRole("button",{name:"Enter focus mode",exact:true}).click();
+  await expect(page.locator(".app-shell")).toHaveClass(/focus-mode/);await expect(content).toContainText("A quieter space for my thoughts.");
   expect(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)).toBe(false);
 });
 

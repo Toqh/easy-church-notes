@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Search, X, Plus, LoaderCircle, Check, ArrowRight, ChevronDown } from "lucide-react";
-import { detectReference } from "@/lib/notes/bible-reference";
+import { detectReference, extendPassageReference } from "@/lib/notes/bible-reference";
 import type { BibleVersion, Passage } from "@/lib/notes/types";
 import type { PopularVersion } from "@/lib/notes/popular-versions";
 import { Attribution, bibleRequest, type SearchResponse } from "./bible-panel";
 import VersionOptions from "./version-options";
 
-interface Draft { key: string; input: string; passage?: Passage; status: "idle" | "loading" | "ready" | "error"; error?: string }
+interface Draft { key: string; input: string; passage?: Passage; status: "idle" | "loading" | "ready" | "error"; error?: string; extending?: boolean }
 interface Props {
   initialQuery: string; versions: BibleVersion[]; popular?: PopularVersion[]; version: number;
   configured: boolean; onVersion: (id: number) => void; onInsert: (passages: Passage[]) => void; onClose: () => void;
@@ -29,7 +29,8 @@ export default function PassageDialog({ initialQuery, versions, popular, version
   const queryInput = useRef<HTMLInputElement>(null);
   const searchController = useRef<AbortController | null>(null);
   const draftControllers = useRef(new Map<string, AbortController>());
-  const draftsRef = useRef(drafts); draftsRef.current = drafts;
+  const draftsRef = useRef(drafts);
+  useEffect(()=>{draftsRef.current=drafts;},[drafts]);
   const lastQuery = useRef("");
   const alive = useRef(true);
 
@@ -39,6 +40,7 @@ export default function PassageDialog({ initialQuery, versions, popular, version
   }
   async function loadDraft(key: string, text: string, selectedVersion = version) {
     draftControllers.current.get(key)?.abort();
+    patchDraft(key,{extending:false});
     const controller = new AbortController(); draftControllers.current.set(key, controller);
     const reference = detectReference(text.trim());
     if (!reference) { patchDraft(key, { passage: undefined, status: "error", error: "Enter a reference such as John 3:16 or Romans 8:28–30." }); return; }
@@ -49,6 +51,24 @@ export default function PassageDialog({ initialQuery, versions, popular, version
       if (alive.current && !controller.signal.aborted) patchDraft(key, { input: passage.reference, passage, status: "ready" });
     } catch (failure) {
       if (alive.current && !controller.signal.aborted) patchDraft(key, { status: "error", error: failure instanceof Error ? failure.message : "Could not load this passage." });
+    }
+  }
+  async function addNextVerse(draft: Draft) {
+    if(!draft.passage||draft.extending||draft.status!=="ready")return;
+    const next=extendPassageReference(draft.passage.id)??extendPassageReference(detectReference(draft.passage.reference)?.id??"");
+    if(!next)return;
+    draftControllers.current.get(draft.key)?.abort();
+    const controller=new AbortController();draftControllers.current.set(draft.key,controller);
+    patchDraft(draft.key,{extending:true,error:undefined});
+    try {
+      const passage=await bibleRequest<Passage>({action:"passage",version:String(version),reference:next.id},controller.signal);
+      if(!alive.current||controller.signal.aborted)return;
+      const returned=detectReference(passage.reference);
+      if(returned&&returned.id!==next.id)throw new Error("There isn’t another verse in this chapter. You can edit the reference to continue.");
+      patchDraft(draft.key,{input:passage.reference,passage,status:"ready",extending:false,error:undefined});
+      setMessage(`${passage.reference} is ready to insert.`);
+    } catch(failure) {
+      if(alive.current&&!controller.signal.aborted)patchDraft(draft.key,{extending:false,error:failure instanceof Error?failure.message:"Could not add the next verse. Your current passage is still selected."});
     }
   }
   async function addReference(text: string, selectedVersion = version) {
@@ -86,13 +106,17 @@ export default function PassageDialog({ initialQuery, versions, popular, version
   useEffect(() => {
     alive.current = true;
     const element = dialog.current;
+    const controllers=draftControllers.current;
     element?.showModal();
-    if (initialReference) void loadDraft("initial", initialReference.label, version);
-    else if (initialQuery.trim()) void runSearch(initialQuery, "", version);
+    const lookup=setTimeout(()=>{
+      if (initialReference) void loadDraft("initial", initialReference.label, version);
+      else if (initialQuery.trim()) void runSearch(initialQuery, "", version);
+    },0);
     return () => {
+      clearTimeout(lookup);
       alive.current = false; searchController.current?.abort();
-      for (const controller of draftControllers.current.values()) controller.abort();
-      draftControllers.current.clear(); element?.close();
+      for (const controller of controllers.values()) controller.abort();
+      controllers.clear(); element?.close();
     };
     // A new dialog key starts a new lookup; editing/version changes are handled explicitly.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,7 +135,7 @@ export default function PassageDialog({ initialQuery, versions, popular, version
     setComposing(false); setResults([]); setSearched(false);
     setMessage(`${passage.reference} added to your selection.`);
   }
-  const ready = drafts.length > 0 && drafts.every(d => d.status === "ready" && d.passage);
+  const ready = drafts.length > 0 && drafts.every(d => d.status === "ready" && d.passage && !d.extending);
   function insert() {
     if (!ready) return;
     dialog.current?.close();
@@ -125,14 +149,14 @@ export default function PassageDialog({ initialQuery, versions, popular, version
       <section className="passage-selection" aria-label="Passages to insert">
         {drafts.map((draft, index) => <article className="passage-draft" key={draft.key}>
           <form className="passage-reference-form" onSubmit={event => { event.preventDefault(); void loadDraft(draft.key, draft.input); }}>
-            <label><span className="sr-only">Reference {index + 1}</span><input aria-label={`Reference ${index + 1}`} autoFocus={index === 0 && !composing} title="Edit this reference and press Enter" value={draft.input} onChange={event => { draftControllers.current.get(draft.key)?.abort(); patchDraft(draft.key, { input: event.target.value, passage: undefined, status: "idle", error: undefined }); }}/></label>
+            <label><span className="sr-only">Reference {index + 1}</span><input aria-label={`Reference ${index + 1}`} autoFocus={index === 0 && !composing} title="Edit this reference and press Enter" value={draft.input} onChange={event => { draftControllers.current.get(draft.key)?.abort(); patchDraft(draft.key, { input: event.target.value, passage: undefined, status: "idle", error: undefined, extending:false }); }}/></label>
             {(draft.status === "idle" || draft.status === "error") && <button className="passage-update" type="submit" aria-label={`Update reference ${index + 1}`}><span>Update</span><ArrowRight size={15}/></button>}
             {drafts.length > 1 && <button type="button" className="icon-button" aria-label={`Remove reference ${index + 1}`} onClick={() => { draftControllers.current.get(draft.key)?.abort(); setDrafts(previous => previous.filter(d => d.key !== draft.key)); }}><X size={17}/></button>}
           </form>
           {draft.status === "loading" && <p className="search-loading" role="status"><LoaderCircle size={16} className="spin"/>Loading passage…</p>}
           {draft.status === "idle" && <p className="passage-edit-hint">Press Enter to preview this reference.</p>}
           {draft.error && <p className="error-message" role="alert">{draft.error}</p>}
-          {draft.passage && <><div className="passage-preview-label sr-only" aria-live="polite">{draft.passage.reference} · {draft.passage.version.abbreviation}</div><p className="verse-preview-text">{draft.passage.content}</p><Attribution version={draft.passage.version} fumsToken={draft.passage.fumsToken}/></>}
+          {draft.passage && <><div className="passage-preview-label sr-only" aria-live="polite">{draft.passage.reference} · {draft.passage.version.abbreviation}</div><p className="verse-preview-text">{draft.passage.content}</p>{(extendPassageReference(draft.passage.id)||extendPassageReference(detectReference(draft.passage.reference)?.id??""))&&<button type="button" className="passage-next-verse" onClick={()=>void addNextVerse(draft)} disabled={draft.extending} aria-label={drafts.length>1?`Add next verse to reference ${index+1}`:"Add next verse"}>{draft.extending?<LoaderCircle size={15} className="spin"/>:<Plus size={15}/>} {draft.extending?"Adding verse…":"Add next verse"}</button>}<Attribution version={draft.passage.version} fumsToken={draft.passage.fumsToken}/></>}
         </article>)}
       </section>
       {composing ? <div className="passage-composer">

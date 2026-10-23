@@ -206,7 +206,6 @@ html[data-theme="dark"] :is(.notes-search, .bible-search):focus-within { outline
 .mini-tag { padding: 2px var(--space-1); border: 1px solid var(--card-text); background: transparent; color: var(--card-text); border-radius: 2px; font: 500 var(--text-xs)/1.4 var(--font-mono); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .list-footer { display: flex; align-items: center; gap: var(--space-2); min-height: 56px; flex-shrink: 0; padding: var(--space-2) var(--space-4); border-top: 2px solid var(--border); background: var(--surface); color: var(--muted); font-size: var(--text-xs); }
 .list-footer > button { margin-left: auto; }
-.status-dot { width: 8px; height: 8px; background: var(--success); border: 1px solid var(--border); }
 
 /* Ribbon and writing canvas. */
 .editor-column { display: flex; flex-direction: column; min-height: 0; min-width: 0; background: var(--surface); }
@@ -290,6 +289,7 @@ select option { background: var(--surface); color: var(--text); }
 .document-end > span { width: 40px; height: 2px; background: var(--border); }
 .editor-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); min-height: 56px; padding: var(--space-2) var(--space-6); border-top: 2px solid var(--border); color: var(--muted); font-size: var(--text-xs); }
 .saved-status { display: flex; align-items: center; gap: var(--space-2); color: var(--success-ink); }
+.note-statistics { margin-left: auto; }
 .footer-divider { margin: 0 var(--space-2); }
 .app-notice { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-6); border-bottom: 2px solid var(--border); background: var(--warning-surface); color: var(--warning-ink); font-size: var(--text-xs); line-height: 1.7; }
 .app-notice > span { flex: 1; overflow-wrap: anywhere; }
