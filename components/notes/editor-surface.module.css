@@ -1,4 +1,13 @@
 .shell { --editor-focus: var(--secondary); }
+.shell:global(.app-shell) { grid-template-columns: 264px minmax(0, 1fr); }
+.shell > :global(.editor-column) { grid-column: 2; }
+.shell:global(.app-shell):global(.focus-mode) { grid-template-columns: minmax(0, 1fr); }
+.shell:global(.focus-mode) > :global(.editor-column) { grid-column: 1; }
+.shell :global(.editor-navigation-toggle) { display: none; }
+.shell :global(.ribbon-left) { flex: 1; min-width: 0; }
+.shell :global(.breadcrumb) { min-width: 0; overflow: hidden; }
+.shell :global(.notebook-toggle) { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: 44px; gap: var(--space-2); padding: var(--space-1) var(--space-2); border: 1px solid var(--border-soft); border-radius: var(--radius); background: var(--canvas); font-size: var(--text-sm); font-weight: 600; }
+.shell :global(.notebook-toggle):hover { border-color: var(--border); background: var(--violet-surface); }
 :global(html[data-theme="dark"]) .shell { --editor-focus: var(--primary); }
 .shell :global(.editor-ribbon) { min-height: 72px; height: 72px; border-bottom: 1px solid var(--border-soft); }
 .shell :global(.breadcrumb-collection) { color: var(--muted); font-weight: 400; }
@@ -20,9 +29,23 @@
 @media (min-width: 761px) and (max-width: 1050px) {
   .shell :global(.editor-ribbon) { height: auto; min-height: 120px; }
 }
+@media (min-width: 761px) and (max-width: 1280px) {
+  .shell:global(.app-shell):not(:global(.focus-mode)) { grid-template-columns: 248px minmax(0, 1fr); }
+}
+@media (min-width: 1051px) {
+  .shell:global(.app-shell):global(.nav-collapsed):not(:global(.focus-mode)) { grid-template-columns: 72px minmax(0, 1fr); }
+}
+@media (min-width: 761px) and (max-width: 1050px) {
+  .shell:global(.app-shell):not(:global(.focus-mode)) { grid-template-columns: 0 minmax(0, 1fr); }
+}
+@media (max-width: 1050px) {
+  .shell :global(.editor-navigation-toggle) { display: inline-flex; }
+  .shell:global(.focus-mode) :global(.editor-navigation-toggle) { display: none; }
+}
 @media (max-width: 760px) {
   .shell :global(.editor-ribbon) { height: 64px; min-height: 64px; padding: var(--space-2) var(--space-3); align-items: center; gap: var(--space-2); }
   .shell :global(.ribbon-left) { flex: 1; flex-shrink: 1; min-width: 0; gap: var(--space-1); padding: 0; }
+  .shell :global(.notebook-toggle) { border: 0; background: transparent; padding: var(--space-1); gap: var(--space-1); font-weight: 500; }
   .shell :global(.mobile-back) { width: auto; min-width: 76px; margin-left: -4px; gap: var(--space-1); color: var(--muted); font-size: var(--text-sm); }
   .shell :global(.mobile-back-label) { display: inline; }
   .shell :global(.breadcrumb) { display: none; }

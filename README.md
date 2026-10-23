@@ -58,11 +58,11 @@ Publisher terms determine permitted display, attribution, copying, and retention
 - Standard editor shortcuts: bold, italic, undo, redo.
 - Enter or comma in the tag field: add a tag.
 - Light/dark appearance is saved on this device. Phone layouts switch between the note list and editor, with a navigation drawer.
-- The editor ribbon includes appearance and Focus mode controls. The left navigation and Your Notebook list minimize independently on desktop/tablet. Minimize Your Notebook beside its heading and restore it with **Show notebook** in the ribbon. The current editor remains mounted. Focus mode temporarily hides both panels and preserves their earlier minimized states on exit.
+- The editor ribbon includes appearance, Focus mode and a **Notes** button. The notebook opens as a popup over a blurred background; outside click, Escape or Close dismiss it. Search covers topics, preachers, tags and note text, including multiple words and `#tags`. Selecting a result opens that note. Collection and tag links open filtered notebook views. The left navigation can still minimize, and Focus mode hides it. Opening or searching the notebook keeps the current editor mounted. **Ctrl / ⌘ K** opens the notebook.
 - Personal reflections hide the preacher field. Switching back to a sermon or Bible study restores it without erasing a previously entered name.
 - The phone editor uses a single-row header with a version picker, Bible search and note actions. **Note details** reveals the preacher and tags; **Formatting options** reveals the text tools. Dark mode and Focus mode are available in **Note actions** on phones. The footer shows word count and edit time without a device-save indicator.
 - **Add next verse** in the passage preview extends the current chapter's selection one verse at a time, retaining its starting verse and chosen translation. It inserts as a single passage. Failed extensions preserve the previous selection; another reference can still be added separately.
-- Navigation, the notes list and the writing area scroll independently within the viewport. The mobile navigation drawer scrolls too. Short notes retain 240–480px of editable space below the last paragraph, including in Focus mode; clicking below the text focuses the end and creates a paragraph only when needed.
+- Navigation and the writing area scroll independently within the viewport. The notebook popup has its own scrolling results list. The mobile navigation drawer scrolls too. Short notes retain 240–480px of editable space below the last paragraph, including in Focus mode; clicking below the text focuses the end and creates a paragraph only when needed.
 
 ## First visit and guest notes
 

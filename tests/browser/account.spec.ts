@@ -18,12 +18,12 @@ test("signs into an account, syncs an owned note, then returns to separate guest
     }
     return route.fulfill({json:{}});
   });
-  await page.goto("/");await expect(page.getByRole("button",{name:/Walking by faith/})).toBeVisible();
+  await page.goto("/");await expect(page.getByLabel("Note topic")).toHaveValue("Walking by faith");
   await page.getByRole("button",{name:/Your quiet space/}).click();await page.getByLabel("Email address").fill("reader@example.com");await page.getByLabel("Password",{exact:true}).fill("test-password-123");await page.getByRole("button",{name:"Sign in",exact:true}).click();
-  await expect(page.getByRole("button",{name:/Reader Personal account/})).toBeVisible();await expect(page.getByRole("button",{name:/Walking by faith/})).toHaveCount(0);
+  await expect(page.getByRole("button",{name:/Reader Personal account/})).toBeVisible();await expect(page.getByLabel("Note topic")).toHaveCount(0);
   await page.getByRole("button",{name:/^New note/}).click();await page.getByLabel("Note topic").fill("My private account note");await page.getByRole("textbox",{name:"Note content"}).fill("This belongs to my signed-in account.");
   await expect(page.getByText("All changes synced",{exact:true})).toBeVisible();
   expect(saved.some(n=>n.topic==="My private account note"&&n.user_id===user.id)).toBe(true);
   await page.getByRole("button",{name:/Reader Personal account/}).click();await page.getByRole("button",{name:"Sign out",exact:true}).click();
-  await expect(page.getByRole("button",{name:/Walking by faith/})).toBeVisible();await expect(page.getByRole("button",{name:/My private account note/})).toHaveCount(0);
+  await expect(page.getByLabel("Note topic")).toHaveValue("Walking by faith");await expect(page.getByRole("button",{name:/My private account note/})).toHaveCount(0);
 });

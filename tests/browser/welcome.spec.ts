@@ -32,7 +32,6 @@ for (const width of [320, 390, 1440]) test(`a new visitor can start a blank note
   await content.fill("A thought I want to remember.");
   await page.reload();
   await expect(page.getByRole("heading", { name: "A little space for the Word." })).toHaveCount(0);
-  if (width <= 760) await page.getByRole("button", { name: /My first reflection/ }).click();
   await expect(page.getByLabel("Note topic")).toHaveValue("My first reflection");
   await expect(content).toContainText("A thought I want to remember.");
 });

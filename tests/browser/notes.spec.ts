@@ -21,18 +21,20 @@ test.beforeEach(async({page})=>{
   });
 });
 const modal=(page:import("@playwright/test").Page)=>page.getByRole("dialog",{name:"Bible passages"});
+const notebook=(page:import("@playwright/test").Page)=>page.getByRole("dialog",{name:"Your notebook"});
+async function openNote(page:import("@playwright/test").Page,name:RegExp){await page.getByRole("button",{name:"Open notes",exact:true}).click();await notebook(page).getByRole("button",{name}).click();}
 
 test("writes metadata and rich text, preserves it after reload, and restores deleted notes",async({page})=>{
   const errors:string[]=[];page.on("pageerror",e=>errors.push(e.message));
-  await page.goto("/");await page.getByRole("button",{name:/Walking by faith/}).click();
+  await page.goto("/");await openNote(page,/Walking by faith/);
   await page.getByRole("button",{name:/^New note/}).click();
   await page.getByLabel("Note topic").fill("Sunday reflections");await page.getByLabel("Preacher",{exact:true}).fill("Pastor James");
   await page.getByLabel("Add a tag",{exact:true}).fill("Hope");await page.getByLabel("Add a tag",{exact:true}).press("Enter");
   await page.getByRole("textbox",{name:"Note content"}).fill("A thought to carry into the week.");
-  await page.reload();await page.getByRole("button",{name:/Sunday reflections/}).click();
+  await page.reload();await openNote(page,/Sunday reflections/);
   await expect(page.getByLabel("Preacher",{exact:true})).toHaveValue("Pastor James");await expect(page.getByRole("textbox",{name:"Note content"})).toContainText("A thought to carry");
   await page.getByLabel("Note actions").click();await page.getByRole("button",{name:"Move to Recently deleted"}).click();
-  await page.getByRole("button",{name:/Recently deleted/}).click();await expect(page.getByLabel("Note topic")).toHaveValue("Sunday reflections");
+  await page.getByRole("button",{name:/Recently deleted/}).click();await notebook(page).getByRole("button",{name:/Sunday reflections/}).click();await expect(page.getByLabel("Note topic")).toHaveValue("Sunday reflections");
   await page.getByRole("button",{name:"Restore note",exact:true}).click();await page.getByRole("button",{name:/All notes/}).click();await expect(page.getByRole("button",{name:/Sunday reflections/})).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -69,7 +71,7 @@ test("a reference can be adjusted, invalid edits cannot insert stale text, and t
 });
 
 test("more verses can be added and inserted together at the saved caret",async({page})=>{
-  await page.goto("/");await page.getByRole("button",{name:/A quieter heart/}).click();
+  await page.goto("/");await openNote(page,/A quieter heart/);
   const content=page.getByRole("textbox",{name:"Note content"});await content.fill("Before the verses.\nAfter the verses.");
   await content.locator("p").first().click();await content.press("End");
   const search=page.getByLabel("Search Bible reference or text");await search.fill("John 3:16");await search.press("Enter");
@@ -107,7 +109,7 @@ test("top-right phrase search selects results and creates a note when none is op
 });
 
 test("mobile modal and editor remain usable at 320px",async({page})=>{
-  await page.setViewportSize({width:320,height:844});await page.goto("/");await page.getByRole("button",{name:/Walking by faith/}).click();
+  await page.setViewportSize({width:320,height:844});await page.goto("/");await openNote(page,/Walking by faith/);
   await page.getByRole("button",{name:"Find Bible passage"}).click();
   const search=modal(page).getByLabel("Bible reference or text",{exact:true});await search.fill("John 3:16");await search.press("Enter");
   await expect(modal(page).locator(".verse-preview-text")).toContainText("For God so loved");
@@ -145,12 +147,12 @@ test("a next-verse lookup failure preserves the current verse and it can still b
 });
 
 test("the mobile editor gives writing priority while details, formatting and view controls remain accessible",async({page},testInfo)=>{
-  await page.setViewportSize({width:390,height:700});await page.goto("/");await page.getByRole("button",{name:/Walking by faith/}).click();
+  await page.setViewportSize({width:390,height:700});await page.goto("/");await openNote(page,/Walking by faith/);
   const content=page.getByRole("textbox",{name:"Note content"});await content.fill("A quieter space for my thoughts.");
   expect((await page.locator(".editor-ribbon").boundingBox())!.height).toBeLessThanOrEqual(72);
   expect((await content.boundingBox())!.y).toBeLessThan(350);
   await expect(page.getByLabel("Preacher",{exact:true})).toBeHidden();await expect(page.getByLabel("Bold",{exact:true})).toBeHidden();
-  await expect(page.locator(".editor-footer")).not.toContainText("Saved on this device");await expect(page.locator(".list-footer")).not.toContainText("Notes saved on this device");
+  await expect(page.locator(".editor-footer")).not.toContainText("Saved on this device");await expect(page.locator(".notes-column")).toHaveCount(0);
   await page.screenshot({path:testInfo.outputPath("mobile-note.png"),fullPage:true});
   await page.getByRole("button",{name:"Note details",exact:true}).click();await page.getByLabel("Preacher",{exact:true}).fill("Pastor Ada");
   await page.getByRole("button",{name:"Note details",exact:true}).click();
@@ -183,14 +185,14 @@ test("editable space below the last paragraph accepts another paragraph in norma
   await page.getByLabel("Exit focus mode").click();await expect(content).toContainText("Next thought in the space below.");
 });
 
-test("the main sidebar minimizes independently and both sidebars scroll",async({page})=>{
+test("the navigation minimizes and the popup note list scrolls independently",async({page})=>{
   await page.setViewportSize({width:1440,height:600});
   await page.addInitScript(()=>{const now=new Date().toISOString();localStorage.setItem("easychurchnotes:v1:guest",JSON.stringify(Array.from({length:35},(_,i)=>({id:crypto.randomUUID(),topic:`Reflection ${i}`,preacher:"",tags:[`Study tag ${i}`],kind:"personal",content:{type:"doc",content:[{type:"paragraph",content:[{type:"text",text:"A short reflection."}]}]},plain_text:"A short reflection.",pinned:false,deleted_at:null,created_at:now,updated_at:now}))));});
   await page.goto("/");await expect(page.getByLabel("Note topic")).toBeVisible();
   await page.getByLabel("Minimize sidebar",{exact:true}).click();expect(await page.locator(".sidebar").evaluate(e=>e.getBoundingClientRect().width)).toBeLessThan(80);
-  await expect(page.getByRole("region",{name:"Notes list"})).toBeVisible();await page.getByLabel("Expand sidebar",{exact:true}).click();
+  await expect(page.locator(".notes-column")).toHaveCount(0);await page.getByLabel("Expand sidebar",{exact:true}).click();
   const sidebar=page.locator(".sidebar");await sidebar.hover();await page.mouse.wheel(0,600);await expect.poll(()=>sidebar.evaluate(e=>e.scrollTop)).toBeGreaterThan(0);
-  const list=page.locator(".note-list");await list.hover();await page.mouse.wheel(0,600);await expect.poll(()=>list.evaluate(e=>e.scrollTop)).toBeGreaterThan(0);
+  await page.getByRole("button",{name:"Open notes",exact:true}).click();const list=notebook(page).getByRole("region",{name:"Notes list"});await list.hover();await page.mouse.wheel(0,600);await expect.poll(()=>list.evaluate(e=>e.scrollTop)).toBeGreaterThan(0);
   expect(await page.locator(".note-scroll").evaluate(e=>e.scrollTop)).toBe(0);
 });
 
@@ -219,12 +221,12 @@ test("public fallback versions insert into the note without a retrieval label",a
 
 test("the mobile navigation drawer and long main notes scroll without moving the page",async({page})=>{
   await page.setViewportSize({width:390,height:700});await page.goto("/");
-  await expect(page.getByRole("button",{name:/Walking by faith/})).toBeVisible();
+  await expect(page.getByLabel("Note topic")).toHaveValue("Walking by faith");
   await page.getByLabel("Open navigation",{exact:true}).click();
   const sidebar=page.locator(".sidebar");await expect(sidebar).toBeVisible();await sidebar.hover();await page.mouse.wheel(0,500);
   await expect.poll(()=>sidebar.evaluate(e=>e.scrollTop)).toBeGreaterThan(0);
   await page.getByLabel("Close navigation",{exact:true}).click();
-  await page.getByRole("button",{name:/Walking by faith/}).click();
+  await openNote(page,/Walking by faith/);
   const area=page.locator(".note-scroll");await area.hover();await page.mouse.wheel(0,400);
   await expect.poll(()=>area.evaluate(e=>e.scrollTop)).toBeGreaterThan(0);
   await expect.poll(async()=>Math.abs((await page.getByRole("toolbar",{name:"Text formatting"}).boundingBox())!.y-(await area.boundingBox())!.y)).toBeLessThanOrEqual(1);
@@ -232,22 +234,42 @@ test("the mobile navigation drawer and long main notes scroll without moving the
   expect(await page.evaluate(()=>window.scrollY)).toBe(0);
 });
 
-for(const width of [1440,900])test(`Your Notebook can minimize and restore at ${width}px without remounting the editor`,async({page})=>{
+for(const width of [1440,900,320])test(`the notebook popup closes without changing the editor at ${width}px`,async({page},testInfo)=>{
   await page.setViewportSize({width,height:900});await page.goto("/");
-  const content=page.getByRole("textbox",{name:"Note content"});await content.fill("Keep my place while the notebook is hidden.");
+  const content=page.getByRole("textbox",{name:"Note content"});await content.fill("Keep my place while I search my notebook.");
   await content.evaluate(element=>element.setAttribute("data-editor-check","same-editor"));
-  const initialWidth=await page.locator(".editor-column").evaluate(e=>e.clientWidth);
-  await page.getByLabel("Minimize notebook",{exact:true}).click();
-  await expect(page.getByRole("region",{name:"Notes list"})).toBeHidden();
-  await expect(content).toHaveAttribute("data-editor-check","same-editor");await expect(content).toContainText("Keep my place");
-  expect(await page.locator(".editor-column").evaluate(e=>e.clientWidth)).toBeGreaterThan(initialWidth+200);
-  await expect(page.getByLabel("Show notebook",{exact:true})).toBeVisible();
-  await page.getByLabel("Enter focus mode").click();await page.getByLabel("Exit focus mode").click();
-  await expect(page.getByRole("region",{name:"Notes list"})).toBeHidden();
-  if(width===1440){await expect(page.locator(".sidebar")).toBeVisible();await page.getByLabel("Minimize sidebar",{exact:true}).click();}
-  await page.getByLabel("Show notebook",{exact:true}).click();
-  await expect(page.getByRole("region",{name:"Notes list"})).toBeVisible();await expect(content).toHaveAttribute("data-editor-check","same-editor");
-  if(width===1440)await expect(page.getByLabel("Expand sidebar",{exact:true})).toBeVisible();
+  await expect(page.locator(".notes-column")).toHaveCount(0);
+  await page.getByRole("button",{name:"Open notes",exact:true}).click();const dialog=notebook(page);
+  await expect(dialog.getByLabel("Search your notes")).toBeFocused();
+  expect(await dialog.evaluate(element=>element.matches(":modal"))).toBe(true);
+  expect(await dialog.evaluate(element=>getComputedStyle(element,"::backdrop").backdropFilter)).toContain("blur");
+  await page.screenshot({path:testInfo.outputPath(`notebook-results-${width}.png`),fullPage:true});
+  await dialog.getByLabel("Search your notes").fill("no matching words anywhere");await expect(dialog.getByText("No matching notes",{exact:true})).toBeVisible();
+  expect(await page.getByLabel("Note topic").inputValue()).toBe("Walking by faith");
+  const fits=await dialog.evaluate(element=>{const box=element.getBoundingClientRect();return box.left>=0&&box.right<=innerWidth&&box.bottom<=innerHeight&&element.scrollWidth<=element.clientWidth;});expect(fits).toBe(true);
+  await page.screenshot({path:testInfo.outputPath(`notebook-${width}.png`),fullPage:true});
+  await page.mouse.click(3,3);await expect(dialog).toHaveCount(0);await expect(content).toHaveAttribute("data-editor-check","same-editor");await expect(content).toContainText("Keep my place");
+  await content.locator("p").first().click();await page.keyboard.press("ControlOrMeta+k");await expect(notebook(page)).toBeVisible();await page.keyboard.press("Escape");await expect(notebook(page)).toHaveCount(0);
+});
+
+test("notebook search matches tags, preachers, titles and note text and opens the selected note",async({page})=>{
+  await page.goto("/");await page.getByLabel("Note collection",{exact:true}).selectOption("sermon");await page.getByLabel("Note topic").fill("Sunday with hope");await page.getByLabel("Preacher",{exact:true}).fill("Pastor Ada");
+  await page.getByRole("textbox",{name:"Note content"}).fill("Grace is sufficient for today.");await page.getByRole("button",{name:"Open notes",exact:true}).click();
+  const dialog=notebook(page),search=dialog.getByLabel("Search your notes");
+  for(const query of ["Sunday","Pastor Ada","#Faith","grace sufficient","hope Ada"]){await search.fill(query);await expect(dialog.getByRole("button",{name:/Sunday with hope/})).toBeVisible();}
+  await search.fill("gratitude");await expect(dialog.getByRole("button",{name:/Sunday with hope/})).toHaveCount(0);await search.press("Enter");await expect(dialog).toHaveCount(0);
+  await expect(page.getByLabel("Note topic")).toHaveValue("The practice of gratitude");
+});
+
+test("collection links and popup filters support choosing and creating notes",async({page})=>{
+  await page.goto("/");await page.getByRole("button",{name:/Personal reflections/}).click();const dialog=notebook(page);
+  await expect(dialog.getByLabel("Note collection filter")).toHaveValue("personal");await expect(dialog.getByRole("button",{name:/The practice of gratitude/})).toBeVisible();
+  await expect(dialog.getByRole("button",{name:/Walking by faith/})).toHaveCount(0);await dialog.getByRole("button",{name:"New note",exact:true}).click();
+  await expect(dialog).toHaveCount(0);await expect(page.getByLabel("Note collection",{exact:true})).toHaveValue("personal");await expect(page.getByLabel("Note topic")).toHaveValue("");
+  await page.getByRole("button",{name:"Open notes",exact:true}).click();await notebook(page).getByLabel("Note collection filter").selectOption("study");await notebook(page).getByRole("button",{name:/Walking by faith/}).click();
+  await expect(page.getByLabel("Note topic")).toHaveValue("Walking by faith");
+  await page.getByRole("button",{name:"Faith",exact:true}).click();await expect(notebook(page).getByRole("button",{name:/Walking by faith/})).toBeVisible();
+  await expect(notebook(page).getByRole("button",{name:/A quieter heart/})).toHaveCount(0);await notebook(page).getByLabel("Clear tag filter").click();await expect(notebook(page).getByRole("button",{name:/A quieter heart/})).toBeVisible();
 });
 
 test("API.Bible versions insert with correct credits and report anonymous Scripture views after reload",async({page})=>{

@@ -37,7 +37,7 @@ test("iPhone gets Add to Home Screen instructions without a browser prompt",asyn
     Object.defineProperty(navigator,"userAgent",{get:()=>"Mozilla/5.0 (iPhone; CPU iPhone OS 26_0 like Mac OS X) AppleWebKit/605.1.15 Version/26.0 Mobile/15E148 Safari/604.1"});
     window.addEventListener("beforeinstallprompt",event=>{event.preventDefault();event.stopImmediatePropagation();},true);
   });
-  await page.goto("/");await page.getByRole("button",{name:/Walking by faith/}).click();
+  await page.goto("/");await expect(page.getByLabel("Note topic")).toBeVisible();
   await page.getByLabel("Note actions",{exact:true}).click();await page.getByRole("button",{name:"Install app",exact:true}).click();
   const dialog=page.getByRole("dialog",{name:"Install EasyChurchNotes"});await expect(dialog).toContainText("Add to Home Screen");await expect(dialog).toContainText("Open as Web App");
   await expect(dialog.getByRole("button",{name:"Install app",exact:true})).toHaveCount(0);
