@@ -1,4 +1,5 @@
 export type NoteKind = "sermon" | "study" | "personal";
+export const guestImportKey = "easychurchnotes:signup-import-email";
 export interface Note {
   id: string;
   topic: string;

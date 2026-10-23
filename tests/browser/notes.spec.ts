@@ -7,6 +7,7 @@ const passages:Record<string,{reference:string;content:string}>={
   "ROM.8.28-30":{reference:"Romans 8:28–30",content:"And we know that all things work together for good to them that love God, to them who are the called according to his purpose.\nFor whom he did foreknow, he also did predestinate to be conformed to the image of his Son, that he might be the firstborn among many brethren.\nMoreover whom he did predestinate, them he also called: and whom he called, them he also justified: and whom he justified, them he also glorified."},
 };
 test.beforeEach(async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem("easychurchnotes:started","1"));
   await page.route("**/api/config",route=>route.fulfill({json:{authConfigured:false,bibleConfigured:true,supabaseUrl:"",supabaseKey:""}}));
   await page.route("**/api/bible?**",route=>{
     const params=new URL(route.request().url()).searchParams;

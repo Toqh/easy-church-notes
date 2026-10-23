@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
-import { makeNote, type Note, type NoteKind } from "@/lib/notes/types";
+import { guestImportKey, makeNote, type Note, type NoteKind } from "@/lib/notes/types";
 import { starterNotes } from "@/lib/notes/seed";
 
 export interface AppConfig { authConfigured:boolean; bibleConfigured:boolean; supabaseUrl:string; supabaseKey:string }
@@ -66,6 +66,18 @@ export function useNotes() {
           }
         }
         if(run!==generation.current||!alive)return;
+        if(next?.email&&localStorage.getItem(guestImportKey)===next.email.toLowerCase()) {
+          const merged=new Map((cached??[]).map(n=>[n.id,n]));
+          for(const guest of readCache("guest")??[]) {
+            const existing=merged.get(guest.id);
+            if(!existing||guest.updated_at>existing.updated_at){merged.set(guest.id,guest);pending.current.set(guest.id,guest);}
+          }
+          cached=Array.from(merged.values());
+          // Keep an account copy before clearing the request. Guest originals stay
+          // on the device, and pending imports retry through the normal sync loop.
+          localStorage.setItem(storageKey(owner),JSON.stringify(cached));
+          localStorage.removeItem(guestImportKey);
+        }
         notesRef.current=cached??[];setNotes(notesRef.current);
         setStatus(next?"Saved on this device":"Saved on this device");
         readyRef.current=true;setReady(true);

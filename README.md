@@ -62,6 +62,20 @@ Publisher terms determine permitted display, attribution, copying, and retention
 - Personal reflections hide the preacher field. Switching back to a sermon or Bible study restores it without erasing a previously entered name.
 - Navigation, the notes list and the writing area scroll independently within the viewport. The mobile navigation drawer scrolls too. Short notes retain 240–480px of editable space below the last paragraph, including in Focus mode; clicking below the text focuses the end and creates a paragraph only when needed.
 
+## First visit and guest notes
+
+New visitors see a welcome page with the logo, a short introduction, **Start taking notes** and an optional **Sign in** action. Starting opens one blank note immediately, including on mobile. Notes save locally without an account. Returning visitors and existing notebooks open directly in the app; authentication callback links also bypass the welcome page.
+
+After a guest writes at least 30 words, a dismissible suggestion offers account signup for syncing across devices. It never opens an account form automatically. Signup remembers the requested device-note import for that email address, including when confirmation and sign-in happen later. Imported notes retain their IDs, merge with account notes and use the existing sync retry flow. The guest originals stay on the device. Ordinary sign-in continues to keep guest and account notebooks separate.
+
+## Install as an app
+
+The app includes a web manifest, 192/512px icons, a maskable icon, an Apple home-screen icon and standalone display. Use **Note actions → Install app**, or the browser's install control. On iPhone/iPad, choose **Share → Add to Home Screen**, keep **Open as Web App** enabled where shown, then tap **Add**. On Mac Safari, choose **File → Add to Dock**. Already-installed app windows hide the Install option.
+
+The service worker registers in production on HTTPS or localhost. It caches only public icons, immutable Next.js assets and an offline page. It does not cache API calls, Supabase requests, account data, Bible responses or HTML documents. An open editor keeps saving locally when disconnected; a cold offline launch shows a reconnect page. Bible lookup and account syncing need connectivity. Updates activate when existing app tabs close, rather than forcing a reload while someone is typing.
+
+The requested production address is `https://easy-church-notes.vercel.app`; its assignment still requires an authenticated Vercel deployment and available project/domain name. App icons are generated from `public/icons/app-icon.svg` using `node scripts/generate-icons.mjs` (Sharp is available through the existing tool dependencies).
+
 ## Check the app
 
 ```powershell
@@ -86,7 +100,7 @@ npm.cmd run build:vercel
 node --env-file=.dev.vars ./node_modules/next/dist/bin/next start --port 3001
 ```
 
-Import the GitHub repository into Vercel and add these server environment variables in both Production and Preview: `YOUVERSION_APP_KEY`, `API_BIBLE_KEY`, `API_BIBLE_BASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`. Mark the Bible keys as sensitive. No `NEXT_PUBLIC_` Bible keys are used. Supabase's publishable key is returned by `/api/config`; the Bible keys are never returned. Set the Supabase Site URL and authentication redirect allowlist to the actual Vercel deployment origin after deployment. Do not upload `.dev.vars`; `.gitignore` and `.vercelignore` exclude local secrets and generated files.
+Import the GitHub repository into Vercel and add these server environment variables in both Production and Preview: `YOUVERSION_APP_KEY`, `API_BIBLE_KEY`, `API_BIBLE_BASE_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`. You can import the existing `.dev.vars` contents through Vercel's **Environment Variables → Import .env** control; use a local copy named `vercel.env` if the file picker requires that extension. Save and redeploy after importing. Mark the Bible keys as sensitive. No `NEXT_PUBLIC_` Bible keys are used. Supabase's publishable key is returned by `/api/config`; the Bible keys are never returned. Set the Supabase Site URL and authentication redirect allowlist to the actual Vercel deployment origin after deployment. Keep the credentials file out of GitHub and deployment uploads; `.gitignore` and `.vercelignore` exclude local secrets and generated files.
 
 ## Hosting
 

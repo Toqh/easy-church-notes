@@ -1,2 +1,2 @@
-import NotesApp from "@/components/notes/notes-app";
-export default function Home() { return <NotesApp />; }
+import NotebookHome from "@/components/notes/notebook-home";
+export default function Home() { return <NotebookHome />; }

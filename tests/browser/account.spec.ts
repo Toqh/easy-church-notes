@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test("signs into an account, syncs an owned note, then returns to separate guest notes",async({page})=>{
+  await page.addInitScript(()=>localStorage.setItem("easychurchnotes:started","1"));
   const user={id:"11111111-1111-4111-8111-111111111111",aud:"authenticated",role:"authenticated",email:"reader@example.com",email_confirmed_at:new Date().toISOString(),user_metadata:{full_name:"Reader"},app_metadata:{provider:"email"},created_at:new Date().toISOString()};
   const b64=(s:string)=>Buffer.from(s).toString("base64url");
   const accessToken=`${b64(JSON.stringify({alg:"HS256",typ:"JWT"}))}.${b64(JSON.stringify({sub:user.id,exp:Math.floor(Date.now()/1000)+3600,aud:"authenticated",role:"authenticated"}))}.testsignature`;
