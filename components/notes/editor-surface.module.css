@@ -6,7 +6,9 @@
 .shell :global(.document) { max-width: 860px; }
 .shell :global(.document-kind) { border: 1px solid var(--border-soft); background: var(--canvas); }
 .shell :global(.document-meta) { gap: var(--space-3); }
-.shell :global(.format-toolbar) { min-height: 48px; padding: var(--space-1) 0; background: transparent; border: 0; border-bottom: 1px solid var(--border-soft); border-radius: 0; }
+.shell :global(.format-toolbar) { position: sticky; top: 0; z-index: 5; min-height: 48px; padding: var(--space-1) 0; background: var(--surface); border: 0; border-bottom: 1px solid var(--border-soft); border-radius: 0; }
+.shell :global(.note-scroll) { scroll-padding-top: 64px; }
+.shell :global(.note-scroll):has(:global(.format-open)) { scroll-padding-top: 156px; }
 .shell :global(.format-hint) { display: none; }
 .shell :global(.writing-surface):focus-visible { outline: none; }
 .shell :global(.document):has(:global(.writing-surface):focus-visible) :global(.format-toolbar) { border-bottom: 2px solid var(--editor-focus); }

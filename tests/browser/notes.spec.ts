@@ -178,6 +178,8 @@ test("editable space below the last paragraph accepts another paragraph in norma
   expect(await page.locator(".note-scroll").evaluate(e=>e.scrollHeight-e.clientHeight)).toBeGreaterThan(200);
   await page.getByLabel("Enter focus mode").click();await expect(page.getByRole("region",{name:"Notes list"})).toBeHidden();
   const scroll=page.locator(".note-scroll");await scroll.hover();await page.mouse.wheel(0,600);await expect.poll(()=>scroll.evaluate(e=>e.scrollTop)).toBeGreaterThan(100);
+  await expect.poll(async()=>Math.abs((await page.getByRole("toolbar",{name:"Text formatting"}).boundingBox())!.y-(await scroll.boundingBox())!.y)).toBeLessThanOrEqual(1);
+  await expect(page.getByLabel("Bold",{exact:true})).toBeInViewport();
   await page.getByLabel("Exit focus mode").click();await expect(content).toContainText("Next thought in the space below.");
 });
 
@@ -225,6 +227,8 @@ test("the mobile navigation drawer and long main notes scroll without moving the
   await page.getByRole("button",{name:/Walking by faith/}).click();
   const area=page.locator(".note-scroll");await area.hover();await page.mouse.wheel(0,400);
   await expect.poll(()=>area.evaluate(e=>e.scrollTop)).toBeGreaterThan(0);
+  await expect.poll(async()=>Math.abs((await page.getByRole("toolbar",{name:"Text formatting"}).boundingBox())!.y-(await area.boundingBox())!.y)).toBeLessThanOrEqual(1);
+  await page.getByLabel("Formatting options",{exact:true}).click();await expect(page.getByLabel("Bold",{exact:true})).toBeInViewport();
   expect(await page.evaluate(()=>window.scrollY)).toBe(0);
 });
 
