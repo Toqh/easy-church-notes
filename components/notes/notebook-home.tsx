@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, BookOpen, Check, Cross, Headphones, Heart, PenLine } from "lucide-react";
 import NotesApp from "./notes-app";
 import { makeNote } from "@/lib/notes/types";
+import styles from "./welcome.module.css";
 
 const startedKey = "easychurchnotes:started";
 function subscribeToEntry(change: () => void) {
@@ -38,7 +39,7 @@ export default function NotebookHome() {
 
   if (entered || returning) return <NotesApp initialAuth={initialAuth} startWriting={startWriting} />;
 
-  return <div className="welcome-page">
+  return <div className={`welcome-page ${styles.page}`}>
     <header className="welcome-header">
       <Link className="brand" href="/" aria-label="EasyChurchNotes home"><span className="brand-mark"><Cross size={22} /></span><span>EasyChurch<span className="brand-second">Notes</span></span></Link>
       <button className="welcome-signin" onClick={() => enter("login")}>Sign in <ArrowRight size={16} aria-hidden="true" /></button>

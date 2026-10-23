@@ -11,6 +11,16 @@ for (const width of [320, 390, 1440]) test(`a new visitor can start a blank note
   await expect(page.getByRole("link", { name: "EasyChurchNotes home" })).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("easychurchnotes:v1:guest"))).toBeNull();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.locator(".welcome-header")).toHaveCSS("display", "flex");
+  await expect(page.locator(".welcome-main")).toHaveCSS("display", "grid");
+  const layout=await page.evaluate(()=>{
+    const main=document.querySelector(".welcome-main")!,copy=document.querySelector(".welcome-copy")!,preview=document.querySelector(".welcome-preview")!;
+    const bounds=main.getBoundingClientRect();
+    return {left:bounds.left,right:bounds.right,copy:copy.getBoundingClientRect().right,preview:preview.getBoundingClientRect().left,alignment:getComputedStyle(copy).textAlign};
+  });
+  expect(Math.abs(layout.left-(width-layout.right))).toBeLessThanOrEqual(1);
+  if(width>640)expect(layout.preview).toBeGreaterThan(layout.copy);
+  else expect(layout.alignment).toBe("center");
   await page.screenshot({ path: testInfo.outputPath(`welcome-${width}.png`), fullPage: true });
   await page.getByRole("button", { name: "Start taking notes", exact: true }).click();
   const content = page.getByRole("textbox", { name: "Note content" });
@@ -37,6 +47,18 @@ test("an existing notebook bypasses the welcome page without changing its notes"
   await expect(page.getByLabel("Note topic")).toHaveValue("Already here");
   await expect(page.getByRole("textbox", { name: "Note content" })).toContainText("Keep this reflection.");
   await expect(page.getByRole("button", { name: "Start taking notes" })).toHaveCount(0);
+});
+
+test.describe("before hydration",()=>{
+  test.use({javaScriptEnabled:false,viewport:{width:1440,height:900}});
+  test("the production welcome layout is centered before JavaScript runs",async({page})=>{
+    await page.goto("/");
+    await expect(page.locator(".welcome-header")).toHaveCSS("display","flex");
+    await expect(page.locator(".welcome-main")).toHaveCSS("display","grid");
+    const layout=await page.locator(".welcome-main").boundingBox();
+    expect(layout?.width).toBe(1080);expect(layout?.x).toBe(180);
+    await expect(page.getByRole("button",{name:"Start taking notes",exact:true})).toBeVisible();
+  });
 });
 
 test("Sign in on the welcome page opens the existing account form", async ({ page }) => {
