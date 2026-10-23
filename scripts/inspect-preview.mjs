@@ -1,0 +1,14 @@
+import { chromium } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+const browser=await chromium.launch({channel:"chrome",headless:true});
+const page=await browser.newPage({viewport:{width:1440,height:1000}});
+const errors=[];
+page.on("pageerror",e=>errors.push(e.message));
+page.on("console",m=>{if(m.type()==="error")errors.push(m.text());});
+page.on("requestfailed",r=>errors.push(`${r.url()}: ${r.failure()?.errorText}`));
+await page.goto("http://localhost:5173/",{waitUntil:"domcontentloaded"});
+await page.waitForTimeout(8000);
+mkdirSync(".sites-runtime/screenshots",{recursive:true});
+await page.screenshot({path:".sites-runtime/screenshots/desktop.png"});
+console.log(JSON.stringify({errors:errors.slice(0,20),text:(await page.locator("body").innerText()).slice(0,2500)},null,2));
+await browser.close();
